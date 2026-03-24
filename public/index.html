@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>요양비 세부관리 시스템</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- 상단 헤더 -->
+<header class="header">
+  <div class="header-left">
+    <span class="logo-icon">🏥</span>
+    <span class="logo-text">요양비 세부관리 시스템</span>
+  </div>
+  <div class="header-center">
+    <label>조회 년월</label>
+    <input type="month" id="globalMonth" />
+  </div>
+  <div class="header-right">
+    <button class="btn btn-export" onclick="exportUpload()">📤 시스템 업로드용 엑셀</button>
+    <button class="btn btn-export2" onclick="exportDetail()">📊 세부내역 엑셀</button>
+  </div>
+</header>
+
+<!-- 탭 메뉴 -->
+<nav class="tabs">
+  <button class="tab active" data-tab="dashboard" onclick="switchTab('dashboard')">📋 대시보드</button>
+  <button class="tab" data-tab="residents" onclick="switchTab('residents')">👥 수급자 관리</button>
+  <button class="tab" data-tab="other" onclick="switchTab('other')">📝 기타비용</button>
+</nav>
+
+<!-- 메인 컨텐츠 -->
+<main class="main">
+
+  <!-- ── 대시보드 ── -->
+  <section id="tab-dashboard" class="tab-content active">
+    <div class="section-title">📋 월별 요약 현황</div>
+    <div class="dashboard-grid">
+      <div class="dash-card residents-card">
+        <div class="dash-icon">👥</div>
+        <div class="dash-label">총 수급자</div>
+        <div class="dash-value" id="d-residents">-</div>
+        <div class="dash-sub">명</div>
+      </div>
+      <div class="dash-card medicine-card">
+        <div class="dash-icon">💊</div>
+        <div class="dash-label">진료약제비</div>
+        <div class="dash-value" id="d-medicine-total">-</div>
+        <div class="dash-sub" id="d-medicine-cnt">0건</div>
+      </div>
+      <div class="dash-card supplies-card">
+        <div class="dash-icon">🩺</div>
+        <div class="dash-label">의료소모품</div>
+        <div class="dash-value" id="d-supplies-total">-</div>
+        <div class="dash-sub" id="d-supplies-cnt">0건</div>
+      </div>
+      <div class="dash-card doctor-card">
+        <div class="dash-icon">👨‍⚕️</div>
+        <div class="dash-label">계약의사</div>
+        <div class="dash-value" id="d-doctor-total">-</div>
+        <div class="dash-sub" id="d-doctor-cnt">0건</div>
+      </div>
+      <div class="dash-card nursing-card">
+        <div class="dash-icon">🏠</div>
+        <div class="dash-label">가정간호</div>
+        <div class="dash-value" id="d-nursing-total">-</div>
+        <div class="dash-sub" id="d-nursing-cnt">0건</div>
+      </div>
+      <div class="dash-card other-card">
+        <div class="dash-icon">📝</div>
+        <div class="dash-label">기타</div>
+        <div class="dash-value" id="d-other-total">-</div>
+        <div class="dash-sub" id="d-other-cnt">0건</div>
+      </div>
+    </div>
+    <div class="dash-total-box">
+      <span>선택 월 전체 합계:</span>
+      <strong id="d-grand-total">0원</strong>
+    </div>
+    <!-- 수급자별 요약 -->
+    <div class="section-title" style="margin-top:24px">👤 수급자별 월 합계</div>
+    <div class="search-bar">
+      <select id="dash-table-select" onchange="loadResidentSummary()">
+        <option value="all">전체</option>
+      </select>
+      <button class="btn btn-export2" onclick="exportResidentSummary()">📊 합계 엑셀</button>
+    </div>
+    <div class="table-wrap">
+      <table id="resident-summary-table">
+        <thead><tr><th>수급자ID</th><th>성명</th><th>진료약제비</th><th>의료소모품</th><th>계약의사</th><th>가정간호</th><th>기타</th><th>월 전체금액</th></tr></thead>
+        <tbody id="resident-summary-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── 수급자 관리 ── -->
+  <section id="tab-residents" class="tab-content">
+    <div class="section-title">👥 수급자 관리</div>
+    <div class="search-bar">
+      <input type="text" id="res-search" placeholder="이름 또는 ID 검색..." onkeyup="loadResidents()" onkeydown="if(event.key==='Enter'){loadResidents()}">
+      <button class="btn btn-primary" onclick="openResidentModal()">+ 수급자 등록</button>
+      <button class="btn btn-search" onclick="openResidentBulkModal()">CSV 일괄등록</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>수급자ID</th><th>성명</th><th>성별</th><th>나이</th><th>등급</th><th>생활실</th><th>호실</th><th>입소일</th><th>관리</th></tr>
+        </thead>
+        <tbody id="residents-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── 진료약제비 ── -->
+  <section id="tab-medicine" class="tab-content">
+    <div class="section-title">💊 진료약제비 세부내역</div>
+    <div class="search-bar">
+      <input type="text" id="med-search-res" placeholder="수급자 ID 또는 이름..." onkeydown="if(event.key==='Enter'){loadMedicine()}">
+      <input type="date" id="med-from" placeholder="시작일">
+      <span>~</span>
+      <input type="date" id="med-to" placeholder="종료일">
+      <button class="btn btn-search" onclick="loadMedicine()">🔍 조회</button>
+      <button class="btn btn-primary" onclick="openModal('medicine')">+ 항목 추가</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>NO</th><th>수급자ID</th><th>성명</th><th>날짜</th><th>병원/의원</th><th>내역</th><th>금액</th><th>영수증번호</th><th>비고</th><th>관리</th></tr></thead>
+        <tbody id="medicine-body"></tbody>
+      </table>
+      <div class="table-footer"><strong>합계: <span id="medicine-total">0</span>원</strong></div>
+    </div>
+  </section>
+
+  <!-- ── 의료소모품 ── -->
+  <section id="tab-supplies" class="tab-content">
+    <div class="section-title">🩺 의료소모품 세부내역</div>
+    <div class="search-bar">
+      <input type="text" id="sup-search-res" placeholder="수급자 ID 또는 이름..." onkeydown="if(event.key==='Enter'){loadSupplies()}">
+      <input type="date" id="sup-from">
+      <span>~</span>
+      <input type="date" id="sup-to">
+      <button class="btn btn-search" onclick="loadSupplies()">🔍 조회</button>
+      <button class="btn btn-primary" onclick="openModal('supplies')">+ 항목 추가</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>NO</th><th>수급자ID</th><th>성명</th><th>날짜</th><th>구매처</th><th>품목명</th><th>수량</th><th>단가</th><th>금액</th><th>영수증번호</th><th>비고</th><th>관리</th></tr></thead>
+        <tbody id="supplies-body"></tbody>
+      </table>
+      <div class="table-footer"><strong>합계: <span id="supplies-total">0</span>원</strong></div>
+    </div>
+  </section>
+
+  <!-- ── 계약의사 ── -->
+  <section id="tab-doctor" class="tab-content">
+    <div class="section-title">👨‍⚕️ 계약의사 세부내역</div>
+    <div class="search-bar">
+      <input type="text" id="doc-search-res" placeholder="수급자 ID 또는 이름..." onkeydown="if(event.key==='Enter'){loadDoctor()}">
+      <input type="date" id="doc-from">
+      <span>~</span>
+      <input type="date" id="doc-to">
+      <button class="btn btn-search" onclick="loadDoctor()">🔍 조회</button>
+      <button class="btn btn-primary" onclick="openModal('doctor')">+ 항목 추가</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>NO</th><th>수급자ID</th><th>성명</th><th>날짜</th><th>의사명</th><th>방문유형</th><th>방문횟수</th><th>금액</th><th>비고</th><th>관리</th></tr></thead>
+        <tbody id="doctor-body"></tbody>
+      </table>
+      <div class="table-footer"><strong>합계: <span id="doctor-total">0</span>원</strong></div>
+    </div>
+  </section>
+
+  <!-- ── 가정간호 ── -->
+  <section id="tab-nursing" class="tab-content">
+    <div class="section-title">🏠 가정간호 세부내역</div>
+    <div class="search-bar">
+      <input type="text" id="nur-search-res" placeholder="수급자 ID 또는 이름..." onkeydown="if(event.key==='Enter'){loadNursing()}">
+      <input type="date" id="nur-from">
+      <span>~</span>
+      <input type="date" id="nur-to">
+      <button class="btn btn-search" onclick="loadNursing()">🔍 조회</button>
+      <button class="btn btn-primary" onclick="openModal('nursing')">+ 항목 추가</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>NO</th><th>수급자ID</th><th>성명</th><th>날짜</th><th>간호사명</th><th>방문유형</th><th>방문횟수</th><th>금액</th><th>비고</th><th>관리</th></tr></thead>
+        <tbody id="nursing-body"></tbody>
+      </table>
+      <div class="table-footer"><strong>합계: <span id="nursing-total">0</span>원</strong></div>
+    </div>
+  </section>
+
+  <!-- ── 기타비용 ── -->
+  <section id="tab-other" class="tab-content">
+    <div class="section-title">📝 기타비용 세부내역</div>
+    <div class="search-bar">
+      <input type="text" id="oth-search-res" placeholder="수급자 ID 또는 이름..." onkeydown="if(event.key==='Enter'){loadOther()}">
+      <input type="date" id="oth-from">
+      <span>~</span>
+      <input type="date" id="oth-to">
+      <button class="btn btn-search" onclick="loadOther()">🔍 조회</button>
+      <button class="btn btn-export2" onclick="exportOtherFiltered()">📊 현재조회 엑셀</button>
+      <button class="btn btn-primary" onclick="openModal('other')">+ 항목 추가</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>NO</th><th>수급자ID</th><th>성명</th><th>날짜</th><th>분류</th><th>내역</th><th>금액</th><th>비고</th><th>관리</th></tr></thead>
+        <tbody id="other-body"></tbody>
+      </table>
+      <div class="table-footer"><strong>합계: <span id="other-total">0</span>원</strong></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ═══════════════ 모달들 ═══════════════ -->
+
+<!-- 수급자 모달 -->
+<div id="modal-resident" class="modal-overlay">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span id="resident-modal-title">수급자 등록</span>
+      <button class="modal-close" onclick="closeModal('resident')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>수급자 ID</label><input id="r-id" type="text" placeholder="자동 생성 (일련번호)"></div>
+        <div class="form-group"><label>성명 <span class="req">*</span></label><input id="r-name" type="text"></div>
+        <div class="form-group"><label>성별</label>
+          <select id="r-gender"><option value="">선택</option><option>남</option><option>여</option></select>
+        </div>
+        <div class="form-group"><label>나이</label><input id="r-age" type="number"></div>
+        <div class="form-group"><label>등급</label>
+          <select id="r-grade"><option value="">선택</option><option>1등급</option><option>2등급</option><option>3등급</option><option>4등급</option><option>5등급</option><option>인지지원등급</option></select>
+        </div>
+        <div class="form-group"><label>생활실</label><input id="r-ward" type="text"></div>
+        <div class="form-group"><label>호실</label><input id="r-room" type="text"></div>
+        <div class="form-group"><label>입소일</label><input id="r-admission" type="date"></div>
+        <div class="form-group full"><label>비고</label><input id="r-notes" type="text"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal('resident')">취소</button>
+      <button class="btn btn-primary" onclick="saveResident()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 비용 항목 모달 -->
+<div id="modal-cost" class="modal-overlay">
+  <div class="modal modal-wide" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span id="cost-modal-title">항목 추가</span>
+      <button class="modal-close" onclick="closeCostModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- 공통 필드 -->
+      <div class="form-grid">
+        <div class="form-group">
+          <label>수급자 ID <span class="req">*</span></label>
+          <div style="display:flex;gap:6px">
+            <input id="c-resident-id" type="text" placeholder="ID 직접 입력" style="flex:1" oninput="searchResidentInline()">
+            <button class="btn btn-search" onclick="openResidentPicker()">검색</button>
+          </div>
+          <div id="resident-inline-results" class="inline-search-results"></div>
+        </div>
+        <div class="form-group"><label>성명</label><input id="c-resident-name" type="text" readonly style="background:#f5f5f5"></div>
+        <div class="form-group"><label>날짜 <span class="req">*</span></label><input id="c-date" type="date"></div>
+        <div class="form-group"><label>년월</label><input id="c-year-month" type="month"></div>
+      </div>
+      <!-- 항목별 동적 필드 -->
+      <div id="dynamic-fields"></div>
+      <!-- 공통 하단 -->
+      <div class="form-grid">
+        <div class="form-group"><label>금액 <span class="req">*</span></label><input id="c-amount" type="text" inputmode="numeric" placeholder="0" oninput="onAmountInput()"></div>
+        <div class="form-group"><label>비고</label><input id="c-notes" type="text"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeCostModal()">취소</button>
+      <button class="btn btn-primary" onclick="saveCost()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 수급자 선택 피커 -->
+<div id="modal-picker" class="modal-overlay">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header"><span>수급자 검색</span><button class="modal-close" onclick="closePicker()">✕</button></div>
+    <div class="modal-body">
+      <input type="text" id="picker-search" placeholder="이름 또는 ID 검색..." oninput="loadPickerResidents()" onkeydown="if(event.key==='Enter'){loadPickerResidents()}" style="width:100%;padding:8px;margin-bottom:12px;border:1px solid #ddd;border-radius:4px">
+      <div class="table-wrap" style="max-height:300px">
+        <table>
+          <thead><tr><th>ID</th><th>성명</th><th>등급</th><th>생활실</th><th>선택</th></tr></thead>
+          <tbody id="picker-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 수급자 일괄등록 모달 -->
+<div id="modal-resident-bulk" class="modal-overlay">
+  <div class="modal modal-wide" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span>수급자 CSV 일괄등록</span>
+      <button class="modal-close" onclick="closeModal('resident-bulk')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>CSV 파일 업로드</label>
+        <input id="resident-csv-file" type="file" accept=".csv,text/csv" onchange="onResidentCsvFileSelected(event)">
+      </div>
+      <div class="form-group" style="margin-top:10px">
+        <label>CSV 텍스트</label>
+        <textarea id="resident-csv-text" rows="12" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px" placeholder="예시:
+순번,성명,생활실,등급
+1,강우분,2층,4
+2,강정구,3층,3"></textarea>
+      </div>
+      <div style="margin-top:8px;font-size:13px;color:#666">
+        사용 가능 헤더: 성명(필수), 등급, 생활실(또는 층), 호실, 성별, 나이, 입소일, 비고
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal('resident-bulk')">취소</button>
+      <button class="btn btn-primary" onclick="saveResidentBulk()">일괄등록</button>
+    </div>
+  </div>
+</div>
+
+<!-- 확인 모달 -->
+<div id="modal-confirm" class="modal-overlay">
+  <div class="modal modal-sm" onclick="event.stopPropagation()">
+    <div class="modal-body" style="text-align:center;padding:24px">
+      <div style="font-size:48px;margin-bottom:12px">⚠️</div>
+      <p id="confirm-msg">삭제하시겠습니까?</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeConfirm()">취소</button>
+      <button class="btn btn-danger" onclick="confirmAction()">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- 토스트 -->
+<div id="toast" class="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

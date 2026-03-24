@@ -1,0 +1,19 @@
+{
+  "name": "care-cost-manager",
+  "version": "1.0.0",
+  "description": "요양비 세부관리 시스템",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["요양비", "복지", "관리"],
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^11.9.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1",
+    "xlsx": "^0.18.5"
+  }
+}
